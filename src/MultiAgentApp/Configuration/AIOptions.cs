@@ -63,8 +63,10 @@ public sealed class MicrosoftFoundryOptions
     public string ProjectName { get; set; } = string.Empty;
 
     /// <summary>
-    /// Azure OpenAI API key.
-    /// In production, retrieve this from Azure Key Vault or Managed Identity rather than storing it here.
+    /// Azure OpenAI API key (optional).
+    /// When empty, the application authenticates using <c>DefaultAzureCredential</c>
+    /// (Managed Identity, Azure CLI, environment variables, etc.) – the preferred approach
+    /// for Azure deployments. When set, API key authentication is used instead.
     /// </summary>
     public string ApiKey { get; set; } = string.Empty;
 }
