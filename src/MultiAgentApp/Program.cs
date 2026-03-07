@@ -47,7 +47,7 @@ Console.ResetColor();
 
 var aiBackend = aiOptions.UseFoundryLocal
     ? $"Microsoft Foundry Local  ({aiOptions.FoundryLocal.ModelId}  @ {aiOptions.FoundryLocal.Endpoint})"
-    : $"Azure AI Foundry  (deployment: {aiOptions.AzureAIFoundry.DeploymentName})";
+    : $"Microsoft Foundry  (deployment: {aiOptions.MicrosoftFoundry.DeploymentName}, project: {aiOptions.MicrosoftFoundry.ProjectName})";
 var mcpBackend = mcpOptions.UseAzureApim ? "Azure API Management MCP" : "Local stdio MCP servers";
 var appInsights = string.IsNullOrWhiteSpace(telemetryOptions.ApplicationInsightsConnectionString)
     ? "disabled (set Telemetry:ApplicationInsightsConnectionString to enable)"

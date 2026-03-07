@@ -2,7 +2,7 @@
 
 A **C# .NET 8** proof-of-concept demonstrating a **multi-agent workflow** built with the
 [Microsoft Agent Framework](https://github.com/microsoft/agent-framework) (`Microsoft.Agents.AI.*`)
-and **Microsoft Foundry Local**, with a clear upgrade path to **Azure AI Foundry** and
+and **Microsoft Foundry Local**, with a clear upgrade path to **Microsoft Foundry** and
 **Azure API Management MCP** once those cloud resources are available.
 
 ---
@@ -70,17 +70,18 @@ and **Microsoft Foundry Local**, with a clear upgrade path to **Azure AI Foundry
 
 ---
 
-## Switching to Azure AI Foundry
+## Switching to Microsoft Foundry
 
-When an Azure AI Foundry resource is available, flip a single config flag:
+When a Microsoft Foundry resource is available, flip a single config flag:
 
 1. Edit `src/MultiAgentApp/appsettings.json`:
    ```json
    "AI": {
      "UseFoundryLocal": false,
-     "AzureAIFoundry": {
+     "MicrosoftFoundry": {
        "Endpoint":        "https://YOUR-RESOURCE.openai.azure.com/",
        "DeploymentName":  "gpt-4o",
+       "ProjectName":     "YOUR-PROJECT-NAME",
        "ApiKey":          "YOUR-API-KEY"
      }
    }
@@ -141,7 +142,7 @@ maf-msf-local-POC/
 ├── src/
 │   ├── MultiAgentApp/
 │   │   ├── Agents/
-│   │   │   ├── ChatClientFactory.cs   ← IChatClient factory (Foundry Local ↔ Azure)
+│   │   │   ├── ChatClientFactory.cs   ← IChatClient factory (Foundry Local ↔ Microsoft Foundry)
 │   │   │   ├── WeatherAgent.cs        ← MAF ChatClientAgent + Weather MCP tools
 │   │   │   ├── ProductsAgent.cs       ← MAF ChatClientAgent + Products MCP tools
 │   │   │   └── OrchestratorAgent.cs   ← AgentWorkflowBuilder handoff workflow

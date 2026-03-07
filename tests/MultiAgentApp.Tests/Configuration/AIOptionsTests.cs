@@ -21,11 +21,12 @@ public class AIOptionsTests
     }
 
     [Fact]
-    public void DefaultAzureAIFoundryOptions_AreEmpty()
+    public void DefaultMicrosoftFoundryOptions_AreEmpty()
     {
-        var opts = new AzureAIFoundryOptions();
+        var opts = new MicrosoftFoundryOptions();
         Assert.Equal(string.Empty, opts.Endpoint);
         Assert.Equal(string.Empty, opts.DeploymentName);
+        Assert.Equal(string.Empty, opts.ProjectName);
         Assert.Equal(string.Empty, opts.ApiKey);
     }
 
@@ -47,22 +48,24 @@ public class AIOptionsTests
     }
 
     [Fact]
-    public void AIOptions_CanSwitchToAzureAIFoundry()
+    public void AIOptions_CanSwitchToMicrosoftFoundry()
     {
         var options = new AIOptions
         {
             UseFoundryLocal = false,
-            AzureAIFoundry = new AzureAIFoundryOptions
+            MicrosoftFoundry = new MicrosoftFoundryOptions
             {
                 Endpoint = "https://myresource.openai.azure.com/",
                 DeploymentName = "gpt-4o",
+                ProjectName = "my-project",
                 ApiKey = "test-key"
             }
         };
 
         Assert.False(options.UseFoundryLocal);
-        Assert.Equal("https://myresource.openai.azure.com/", options.AzureAIFoundry.Endpoint);
-        Assert.Equal("gpt-4o", options.AzureAIFoundry.DeploymentName);
+        Assert.Equal("https://myresource.openai.azure.com/", options.MicrosoftFoundry.Endpoint);
+        Assert.Equal("gpt-4o", options.MicrosoftFoundry.DeploymentName);
+        Assert.Equal("my-project", options.MicrosoftFoundry.ProjectName);
     }
 
     [Fact]

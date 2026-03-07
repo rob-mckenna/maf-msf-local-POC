@@ -3,7 +3,7 @@ namespace MultiAgentApp.Configuration;
 /// <summary>
 /// Top-level AI provider options.
 /// Toggle <see cref="UseFoundryLocal"/> to switch between Microsoft Foundry Local
-/// (running on the developer's machine) and Azure AI Foundry (cloud).
+/// (running on the developer's machine) and Microsoft Foundry (cloud).
 /// </summary>
 public sealed class AIOptions
 {
@@ -11,15 +11,15 @@ public sealed class AIOptions
 
     /// <summary>
     /// When <c>true</c>, the app connects to a locally-running Microsoft Foundry Local instance.
-    /// Set to <c>false</c> to use Azure AI Foundry once a cloud environment is available.
+    /// Set to <c>false</c> to use Microsoft Foundry once a cloud environment is available.
     /// </summary>
     public bool UseFoundryLocal { get; set; } = true;
 
     /// <summary>Connection settings for Microsoft Foundry Local (local inference).</summary>
     public FoundryLocalOptions FoundryLocal { get; set; } = new();
 
-    /// <summary>Connection settings for Azure AI Foundry (cloud). Used when <see cref="UseFoundryLocal"/> is <c>false</c>.</summary>
-    public AzureAIFoundryOptions AzureAIFoundry { get; set; } = new();
+    /// <summary>Connection settings for Microsoft Foundry (cloud). Used when <see cref="UseFoundryLocal"/> is <c>false</c>.</summary>
+    public MicrosoftFoundryOptions MicrosoftFoundry { get; set; } = new();
 }
 
 /// <summary>
@@ -45,16 +45,22 @@ public sealed class FoundryLocalOptions
 }
 
 /// <summary>
-/// Connection settings for Azure AI Foundry.
+/// Connection settings for Microsoft Foundry (cloud).
 /// Populated from environment variables or Azure Key Vault once a cloud environment is available.
 /// </summary>
-public sealed class AzureAIFoundryOptions
+public sealed class MicrosoftFoundryOptions
 {
-    /// <summary>Azure OpenAI / AI Foundry endpoint URL.</summary>
+    /// <summary>Microsoft Foundry endpoint URL.</summary>
     public string Endpoint { get; set; } = string.Empty;
 
-    /// <summary>Chat completion deployment name in Azure AI Foundry.</summary>
+    /// <summary>Chat completion deployment name in Microsoft Foundry.</summary>
     public string DeploymentName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Microsoft Foundry project name.
+    /// Used to scope requests to a specific project within the Microsoft Foundry workspace.
+    /// </summary>
+    public string ProjectName { get; set; } = string.Empty;
 
     /// <summary>
     /// Azure OpenAI API key.
