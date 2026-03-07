@@ -1,6 +1,5 @@
-#pragma warning disable SKEXP0110 // Suppress experimental Semantic Kernel Agent Framework API warnings
-using Microsoft.Extensions.Logging;
-using Microsoft.SemanticKernel;
+using Microsoft.Agents.AI;
+using Microsoft.Extensions.AI;
 using MultiAgentApp.Agents;
 using MultiAgentApp.Configuration;
 
@@ -8,28 +7,14 @@ namespace MultiAgentApp.Tests.Agents;
 
 public class ProductsAgentTests
 {
-    private static Kernel CreateTestKernel()
-    {
-        var options = new AIOptions
-        {
-            UseFoundryLocal = true,
-            FoundryLocal = new FoundryLocalOptions
-            {
-                Endpoint = "http://localhost:5272/v1",
-                ModelId = "phi-4-mini-reasoning",
-                ApiKey = "foundry-local"
-            }
-        };
-        using var loggerFactory = LoggerFactory.Create(b => b.AddConsole());
-        return KernelFactory.CreateKernel(options, loggerFactory);
-    }
+    private static IChatClient CreateTestChatClient() =>
+        ChatClientFactory.CreateChatClient(new AIOptions { UseFoundryLocal = true });
 
     [Fact]
-    public void Build_ReturnsAgentWithCorrectName()
+    public void Build_ReturnsAIAgentWithCorrectName()
     {
-        var kernel = CreateTestKernel();
-        using var loggerFactory = LoggerFactory.Create(b => b.AddConsole());
-        var agent = new ProductsAgent(kernel, loggerFactory.CreateLogger<ProductsAgent>());
+        var client = CreateTestChatClient();
+        var agent = new ProductsAgent(client, tools: []);
 
         var builtAgent = agent.Build();
 
@@ -37,24 +22,22 @@ public class ProductsAgentTests
     }
 
     [Fact]
-    public void Build_AgentHasInstructions()
+    public void Build_AgentHasDescription()
     {
-        var kernel = CreateTestKernel();
-        using var loggerFactory = LoggerFactory.Create(b => b.AddConsole());
-        var agent = new ProductsAgent(kernel, loggerFactory.CreateLogger<ProductsAgent>());
+        var client = CreateTestChatClient();
+        var agent = new ProductsAgent(client, tools: []);
 
         var builtAgent = agent.Build();
 
-        Assert.NotNull(builtAgent.Instructions);
-        Assert.Contains("product", builtAgent.Instructions, StringComparison.OrdinalIgnoreCase);
+        Assert.NotNull(builtAgent.Description);
+        Assert.Contains("product", builtAgent.Description, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
     public void Build_CalledMultipleTimes_ReturnsDistinctAgents()
     {
-        var kernel = CreateTestKernel();
-        using var loggerFactory = LoggerFactory.Create(b => b.AddConsole());
-        var agent = new ProductsAgent(kernel, loggerFactory.CreateLogger<ProductsAgent>());
+        var client = CreateTestChatClient();
+        var agent = new ProductsAgent(client, tools: []);
 
         var agent1 = agent.Build();
         var agent2 = agent.Build();
@@ -62,4 +45,20 @@ public class ProductsAgentTests
         Assert.NotSame(agent1, agent2);
         Assert.Equal(agent1.Name, agent2.Name);
     }
+
+    [Fact]
+    public void Build_WithTools_AgentHasTools()
+    {
+        var client = CreateTestChatClient();
+        AITool mockTool = AIFunctionFactory.Create(
+            ([System.ComponentModel.Description("Product ID")] int id) => $"Product {id}",
+            "get_product",
+            "Gets a product");
+
+        var agent = new ProductsAgent(client, tools: [mockTool]);
+
+        var builtAgent = agent.Build();
+        Assert.NotNull(builtAgent);
+    }
 }
+

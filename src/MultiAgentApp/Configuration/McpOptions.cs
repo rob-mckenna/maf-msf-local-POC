@@ -37,7 +37,7 @@ public sealed class McpOptions
 /// <summary>Per-server MCP connection settings.</summary>
 public sealed class McpServerOptions
 {
-    /// <summary>Friendly name used when registering the plugin in the Semantic Kernel.</summary>
+    /// <summary>Friendly name used to identify this server in the Microsoft Agent Framework.</summary>
     public string Name { get; set; } = string.Empty;
 
     /// <summary>Executable to launch for stdio transport (e.g. "dotnet").</summary>

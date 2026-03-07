@@ -8,17 +8,22 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Application Insights: referenced now so that adding telemetry requires only a config change.
-         Uncomment AddApplicationInsightsTelemetryWorkerService() in TelemetryConfiguration.cs
-         once an Azure Application Insights resource is available. -->
-    <PackageReference Include="Microsoft.ApplicationInsights" Version="2.23.0" />
+    <!-- Microsoft Agent Framework (https://github.com/microsoft/agent-framework) -->
+    <PackageReference Include="Microsoft.Agents.AI" Version="1.0.0-rc3" />
+    <PackageReference Include="Microsoft.Agents.AI.OpenAI" Version="1.0.0-rc3" />
+    <PackageReference Include="Microsoft.Agents.AI.Workflows" Version="1.0.0-rc3" />
+    <!-- OpenAI-compatible client (used for Foundry Local and Azure AI Foundry) -->
+    <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="10.3.0" />
+    <!-- Configuration and hosting -->
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
-    <!-- Microsoft Agent Framework (Semantic Kernel) -->
-    <PackageReference Include="Microsoft.SemanticKernel" Version="1.73.0" />
-    <PackageReference Include="Microsoft.SemanticKernel.Agents.Core" Version="1.73.0" />
     <!-- MCP client: connects to local stdio servers or Azure APIM MCP endpoints -->
     <PackageReference Include="ModelContextProtocol" Version="1.1.0" />
+    <!-- OpenTelemetry: tracing to console (always enabled) -->
+    <PackageReference Include="OpenTelemetry" Version="1.15.0" />
+    <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.15.0" />
+    <!-- Azure Monitor exporter: sends traces to Application Insights once connection string is configured -->
+    <PackageReference Include="Azure.Monitor.OpenTelemetry.Exporter" Version="1.6.0" />
   </ItemGroup>
 
   <ItemGroup>

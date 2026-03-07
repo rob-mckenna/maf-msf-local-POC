@@ -1,21 +1,22 @@
-#pragma warning disable SKEXP0110 // Suppress experimental Semantic Kernel Agent Framework API warnings
+using Microsoft.Agents.AI;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
-using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.Agents;
-using Microsoft.SemanticKernel.ChatCompletion;
 
 namespace MultiAgentApp.Agents;
 
 /// <summary>
 /// Specialist agent that searches for and reasons about product catalog data.
-/// Its tools come from the Products MCP server; callers should add the Products plugin
-/// to the kernel before instantiating this agent.
+///
+/// The agent receives its tools from the Products MCP server (via <see cref="McpClientFactory"/>),
+/// so it can call <c>search_products</c>, <c>get_product_details</c>, and <c>check_inventory</c>
+/// without any hard-coded catalog logic.
 /// </summary>
 public sealed class ProductsAgent
 {
-    private const string AgentName = "ProductsAgent";
+    private const string Name = "ProductsAgent";
+    private const string Description = "Specialist agent for product catalog searches, details, and inventory queries.";
 
-    private const string AgentInstructions = """
+    private const string Instructions = """
         You are a product catalog specialist agent. Your job is to search for products,
         retrieve product details, and check inventory availability by calling the available
         product tools.
@@ -31,29 +32,29 @@ public sealed class ProductsAgent
         If the product cannot be found, say so clearly and suggest alternatives where possible.
         """;
 
-    private readonly Kernel _kernel;
-    private readonly ILogger<ProductsAgent> _logger;
+    private readonly IChatClient _chatClient;
+    private readonly IList<AITool> _tools;
+    private readonly ILoggerFactory? _loggerFactory;
 
-    public ProductsAgent(Kernel kernel, ILogger<ProductsAgent> logger)
+    /// <param name="chatClient">The underlying chat completion client (Foundry Local or Azure AI Foundry).</param>
+    /// <param name="tools">MCP tool functions from the Products MCP server.</param>
+    /// <param name="loggerFactory">Optional logger factory for agent middleware.</param>
+    public ProductsAgent(IChatClient chatClient, IList<AITool> tools, ILoggerFactory? loggerFactory = null)
     {
-        _kernel = kernel;
-        _logger = logger;
+        _chatClient = chatClient;
+        _tools = tools;
+        _loggerFactory = loggerFactory;
     }
 
-    /// <summary>Builds and returns the underlying <see cref="ChatCompletionAgent"/>.</summary>
-    public ChatCompletionAgent Build()
-    {
-        _logger.LogDebug("Building {AgentName}.", AgentName);
-
-        return new ChatCompletionAgent
-        {
-            Name = AgentName,
-            Instructions = AgentInstructions,
-            Kernel = _kernel.Clone(),
-            Arguments = new KernelArguments(new PromptExecutionSettings
-            {
-                FunctionChoiceBehavior = FunctionChoiceBehavior.Auto()
-            })
-        };
-    }
+    /// <summary>
+    /// Builds and returns the underlying <see cref="AIAgent"/> ready for use in a workflow.
+    /// </summary>
+    public AIAgent Build() =>
+        _chatClient.AsAIAgent(
+            instructions: Instructions,
+            name: Name,
+            description: Description,
+            tools: _tools,
+            loggerFactory: _loggerFactory);
 }
+

@@ -1,74 +1,75 @@
-using Microsoft.Extensions.DependencyInjection;
+using Azure.Monitor.OpenTelemetry.Exporter;
+using Microsoft.Agents.AI;
 using Microsoft.Extensions.Logging;
 using MultiAgentApp.Configuration;
+using OpenTelemetry;
+using OpenTelemetry.Trace;
 
 namespace MultiAgentApp.Telemetry;
 
 /// <summary>
-/// Configures logging and observability for the application.
+/// Configures OpenTelemetry tracing for the application.
 ///
-/// Today, telemetry is written to the console.  Once an Application Insights resource
+/// Today, traces are written to the console.  Once an Application Insights resource
 /// is available in Azure:
-///   1. Set <c>Telemetry:ApplicationInsightsConnectionString</c> in appsettings.json
+///   1. Set <c>Telemetry:ApplicationInsightsConnectionString</c> in configuration
 ///      (or as an environment variable / Azure Key Vault secret).
-///   2. Add <c>services.AddApplicationInsightsTelemetryWorkerService()</c> to the
-///      service collection (requires the Microsoft.ApplicationInsights NuGet package
-///      already referenced in the project).
-///   3. Remove the comment markers around the AppInsights registration below.
+///   2. The Azure Monitor trace exporter is already wired up below — it activates
+///      automatically when the connection string is non-empty.
+///   No code changes are needed.
 /// </summary>
 public static class TelemetryConfiguration
 {
     /// <summary>
-    /// Registers logging providers based on <paramref name="options"/>.
+    /// Builds and returns an <see cref="TracerProvider"/> configured for the app.
+    /// The provider writes traces to the console and, when a connection string is
+    /// configured, also to Azure Monitor Application Insights.
     /// </summary>
-    public static ILoggingBuilder ConfigureTelemetry(
+    /// <param name="options">Telemetry options from configuration.</param>
+    /// <param name="sourceName">
+    /// Activity source name used to correlate traces across agents.
+    /// Pass the same value to <see cref="AddOpenTelemetryToAgent"/>.
+    /// </param>
+    public static TracerProvider BuildTracerProvider(TelemetryOptions options, string sourceName)
+    {
+        var builder = Sdk.CreateTracerProviderBuilder()
+            .AddSource(sourceName)
+            .AddConsoleExporter();
+
+        // ── Azure Monitor / Application Insights ──────────────────────────────
+        // Activates automatically when the connection string is set in config.
+        // No code change required — just set Telemetry:ApplicationInsightsConnectionString.
+        if (!string.IsNullOrWhiteSpace(options.ApplicationInsightsConnectionString))
+        {
+            builder.AddAzureMonitorTraceExporter(o =>
+                o.ConnectionString = options.ApplicationInsightsConnectionString);
+        }
+        // ── End Azure Monitor ─────────────────────────────────────────────────
+
+        return builder.Build()!;
+    }
+
+    /// <summary>
+    /// Wraps the given <paramref name="agent"/> with OpenTelemetry middleware so that
+    /// all agent invocations are traced under <paramref name="sourceName"/>.
+    /// </summary>
+    public static AIAgent AddOpenTelemetryToAgent(AIAgent agent, string sourceName) =>
+        agent.AsBuilder()
+             .UseOpenTelemetry(sourceName: sourceName)
+             .Build();
+
+    /// <summary>
+    /// Configures the <see cref="ILoggingBuilder"/> log level based on
+    /// <paramref name="options"/>.
+    /// </summary>
+    public static ILoggingBuilder ConfigureLogLevel(
         this ILoggingBuilder builder,
         TelemetryOptions options)
     {
         builder.AddConsole();
-
-        // ── Application Insights ────────────────────────────────────────────────
-        // Uncomment the block below once Azure Application Insights is available.
-        //
-        // if (!string.IsNullOrWhiteSpace(options.ApplicationInsightsConnectionString))
-        // {
-        //     builder.AddApplicationInsights(
-        //         configureTelemetryConfiguration: tc =>
-        //             tc.ConnectionString = options.ApplicationInsightsConnectionString,
-        //         configureApplicationInsightsLoggerOptions: o => { });
-        // }
-        // ── End Application Insights ────────────────────────────────────────────
-
-        if (options.EnableDetailedTracing)
-        {
-            builder.SetMinimumLevel(LogLevel.Debug);
-        }
-
+        builder.SetMinimumLevel(
+            options.EnableDetailedTracing ? LogLevel.Debug : LogLevel.Information);
         return builder;
     }
-
-    /// <summary>
-    /// Registers the Application Insights telemetry worker service.
-    /// Call this once an Application Insights resource is available.
-    /// </summary>
-    public static IServiceCollection AddApplicationInsightsTelemetry(
-        this IServiceCollection services,
-        TelemetryOptions options)
-    {
-        // ── Application Insights ────────────────────────────────────────────────
-        // Uncomment once Microsoft.ApplicationInsights.AspNetCore (or
-        // Microsoft.ApplicationInsights.WorkerService) is configured:
-        //
-        // if (!string.IsNullOrWhiteSpace(options.ApplicationInsightsConnectionString))
-        // {
-        //     services.AddApplicationInsightsTelemetryWorkerService(o =>
-        //     {
-        //         o.ConnectionString = options.ApplicationInsightsConnectionString;
-        //         o.EnableAdaptiveSampling = true;
-        //     });
-        // }
-        // ── End Application Insights ────────────────────────────────────────────
-
-        return services;
-    }
 }
+

@@ -1,13 +1,13 @@
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
-using Microsoft.SemanticKernel;
 using ModelContextProtocol.Client;
-using ModelContextProtocol.Protocol;
 using MultiAgentApp.Configuration;
 
 namespace MultiAgentApp.MCP;
 
 /// <summary>
-/// Creates MCP (Model Context Protocol) clients and registers their tools as Semantic Kernel plugins.
+/// Creates MCP (Model Context Protocol) clients and converts their tools to
+/// <see cref="AITool"/> instances that Microsoft Agent Framework agents can call.
 ///
 /// Transport strategy:
 /// • Local (default): launches server executables as child processes via stdio transport.
@@ -27,40 +27,20 @@ public sealed class McpClientFactory : IAsyncDisposable
     }
 
     /// <summary>
-    /// Connects to the Weather MCP server and retrieves its tool list.
+    /// Connects to the Weather MCP server and returns its tools as <see cref="AITool"/> objects.
     /// </summary>
-    public async Task<IList<McpClientTool>> GetWeatherToolsAsync(CancellationToken ct = default)
+    public async Task<IList<AITool>> GetWeatherToolsAsync(CancellationToken ct = default)
         => await GetToolsAsync(_options.WeatherServer, ct);
 
     /// <summary>
-    /// Connects to the Products MCP server and retrieves its tool list.
+    /// Connects to the Products MCP server and returns its tools as <see cref="AITool"/> objects.
     /// </summary>
-    public async Task<IList<McpClientTool>> GetProductsToolsAsync(CancellationToken ct = default)
+    public async Task<IList<AITool>> GetProductsToolsAsync(CancellationToken ct = default)
         => await GetToolsAsync(_options.ProductsServer, ct);
-
-    /// <summary>
-    /// Adds the Weather MCP tools to the given <paramref name="kernel"/> as a plugin named "Weather".
-    /// </summary>
-    public async Task AddWeatherPluginToKernelAsync(Kernel kernel, CancellationToken ct = default)
-    {
-        var tools = await GetWeatherToolsAsync(ct);
-        kernel.Plugins.AddFromFunctions("Weather", tools.Select(t => t.AsKernelFunction()));
-        _logger.LogInformation("Registered {Count} Weather tools as kernel plugin.", tools.Count);
-    }
-
-    /// <summary>
-    /// Adds the Products MCP tools to the given <paramref name="kernel"/> as a plugin named "Products".
-    /// </summary>
-    public async Task AddProductsPluginToKernelAsync(Kernel kernel, CancellationToken ct = default)
-    {
-        var tools = await GetProductsToolsAsync(ct);
-        kernel.Plugins.AddFromFunctions("Products", tools.Select(t => t.AsKernelFunction()));
-        _logger.LogInformation("Registered {Count} Products tools as kernel plugin.", tools.Count);
-    }
 
     // ── Private helpers ──────────────────────────────────────────────────────
 
-    private async Task<IList<McpClientTool>> GetToolsAsync(McpServerOptions serverOptions, CancellationToken ct)
+    private async Task<IList<AITool>> GetToolsAsync(McpServerOptions serverOptions, CancellationToken ct)
     {
         IClientTransport transport = _options.UseAzureApim
             ? BuildApimTransport(serverOptions)
@@ -75,7 +55,10 @@ public sealed class McpClientFactory : IAsyncDisposable
         _clients.Add(client);
 
         var tools = await client.ListToolsAsync(cancellationToken: ct);
-        return tools;
+
+        // McpClientTool inherits from AIFunction which inherits from AITool,
+        // so it can be used directly as AITool by MAF agents.
+        return [.. tools];
     }
 
     /// <summary>
@@ -123,4 +106,5 @@ public sealed class McpClientFactory : IAsyncDisposable
         _clients.Clear();
     }
 }
+
 

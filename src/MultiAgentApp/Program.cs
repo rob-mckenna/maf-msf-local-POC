@@ -19,17 +19,20 @@ var aiOptions = configuration.GetSection(AIOptions.SectionName).Get<AIOptions>()
 var mcpOptions = configuration.GetSection(McpOptions.SectionName).Get<McpOptions>() ?? new McpOptions();
 var telemetryOptions = configuration.GetSection(TelemetryOptions.SectionName).Get<TelemetryOptions>() ?? new TelemetryOptions();
 
+// ── Telemetry ────────────────────────────────────────────────────────────────
+
+// Unique source name that correlates all agent traces in this run.
+// Pass it to UseOpenTelemetry() on each agent to link spans across agents.
+var telemetrySourceName = $"MultiAgentApp-{Guid.NewGuid():N}";
+
+// Build the tracer provider (console + optional Azure Monitor Application Insights).
+// To enable Application Insights: set Telemetry:ApplicationInsightsConnectionString.
+using var tracerProvider = TelemetryConfiguration.BuildTracerProvider(telemetryOptions, telemetrySourceName);
+
 // ── Dependency Injection ─────────────────────────────────────────────────────
 
 var services = new ServiceCollection();
-
-services.AddLogging(logging => logging.ConfigureTelemetry(telemetryOptions));
-services.AddApplicationInsightsTelemetry(telemetryOptions);
-
-services.AddSingleton(aiOptions);
-services.AddSingleton(mcpOptions);
-services.AddSingleton(telemetryOptions);
-
+services.AddLogging(logging => logging.ConfigureLogLevel(telemetryOptions));
 var serviceProvider = services.BuildServiceProvider();
 var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
 var logger = loggerFactory.CreateLogger("MultiAgentApp");
@@ -45,46 +48,52 @@ Console.ResetColor();
 var aiBackend = aiOptions.UseFoundryLocal
     ? $"Microsoft Foundry Local  ({aiOptions.FoundryLocal.ModelId}  @ {aiOptions.FoundryLocal.Endpoint})"
     : $"Azure AI Foundry  (deployment: {aiOptions.AzureAIFoundry.DeploymentName})";
-
 var mcpBackend = mcpOptions.UseAzureApim ? "Azure API Management MCP" : "Local stdio MCP servers";
+var appInsights = string.IsNullOrWhiteSpace(telemetryOptions.ApplicationInsightsConnectionString)
+    ? "disabled (set Telemetry:ApplicationInsightsConnectionString to enable)"
+    : "enabled";
 
-logger.LogInformation("AI backend  : {Backend}", aiBackend);
-logger.LogInformation("MCP backend : {Backend}", mcpBackend);
+logger.LogInformation("AI backend         : {Backend}", aiBackend);
+logger.LogInformation("MCP backend        : {Backend}", mcpBackend);
+logger.LogInformation("Application Insights: {Status}", appInsights);
 
-// ── Kernel setup ─────────────────────────────────────────────────────────────
+// ── AI Client setup ───────────────────────────────────────────────────────────
 
-logger.LogInformation("Building Semantic Kernel...");
-var kernel = KernelFactory.CreateKernel(aiOptions, loggerFactory);
+logger.LogInformation("Creating AI chat client...");
+var chatClient = ChatClientFactory.CreateChatClient(aiOptions);
 
-// ── MCP Plugin registration ──────────────────────────────────────────────────
+// ── MCP Tool registration ────────────────────────────────────────────────────
 
 await using var mcpFactory = new McpClientFactory(
     mcpOptions,
     loggerFactory.CreateLogger<McpClientFactory>());
 
-logger.LogInformation("Connecting to MCP servers and registering plugins...");
-
-// Clone kernels for each agent so plugins are isolated
-var weatherKernel = kernel.Clone();
-var productsKernel = kernel.Clone();
-
-await mcpFactory.AddWeatherPluginToKernelAsync(weatherKernel);
-await mcpFactory.AddProductsPluginToKernelAsync(productsKernel);
+logger.LogInformation("Connecting to MCP servers and loading tools...");
+var weatherTools = await mcpFactory.GetWeatherToolsAsync();
+var productsTools = await mcpFactory.GetProductsToolsAsync();
+logger.LogInformation(
+    "Loaded {WeatherCount} weather tools and {ProductCount} products tools.",
+    weatherTools.Count, productsTools.Count);
 
 // ── Agent setup ──────────────────────────────────────────────────────────────
 
+// Each specialist agent gets its own chat client so tool sets are isolated.
+// The orchestrator uses the shared client without tools.
 var weatherAgent = new WeatherAgent(
-    weatherKernel,
-    loggerFactory.CreateLogger<WeatherAgent>());
+    ChatClientFactory.CreateChatClient(aiOptions),
+    weatherTools,
+    loggerFactory);
 
 var productsAgent = new ProductsAgent(
-    productsKernel,
-    loggerFactory.CreateLogger<ProductsAgent>());
+    ChatClientFactory.CreateChatClient(aiOptions),
+    productsTools,
+    loggerFactory);
 
 var orchestrator = new OrchestratorAgent(
-    kernel,
+    chatClient,
     weatherAgent,
     productsAgent,
+    loggerFactory,
     loggerFactory.CreateLogger<OrchestratorAgent>());
 
 // ── Demo Queries ─────────────────────────────────────────────────────────────
@@ -120,7 +129,6 @@ foreach (var (query, index) in demoQueries.Select((q, i) => (q, i + 1)))
     catch (Exception ex)
     {
         logger.LogError(ex, "Query {Index} failed.", index);
-
         Console.ForegroundColor = ConsoleColor.Red;
         Console.WriteLine($"Error: {ex.Message}");
         Console.ResetColor();
