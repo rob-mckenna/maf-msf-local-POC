@@ -9,6 +9,8 @@
 
   <ItemGroup>
     <!-- Microsoft Agent Framework (https://github.com/microsoft/agent-framework) -->
+    <PackageReference Include="Azure.AI.OpenAI" Version="2.1.0" />
+    <PackageReference Include="Azure.Identity" Version="1.18.0" />
     <PackageReference Include="Microsoft.Agents.AI" Version="1.0.0-rc3" />
     <PackageReference Include="Microsoft.Agents.AI.OpenAI" Version="1.0.0-rc3" />
     <PackageReference Include="Microsoft.Agents.AI.Workflows" Version="1.0.0-rc3" />

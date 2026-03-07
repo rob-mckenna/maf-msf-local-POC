@@ -70,6 +70,28 @@ public class ChatClientFactoryTests
     }
 
     [Fact]
+    public void CreateChatClient_WithMicrosoftFoundry_EmptyApiKey_UsesDefaultCredentials_ReturnsIChatClient()
+    {
+        // When ApiKey is empty, DefaultAzureCredential should be used.
+        // The client is created successfully; authentication only occurs on the first request.
+        var options = new AIOptions
+        {
+            UseFoundryLocal = false,
+            MicrosoftFoundry = new MicrosoftFoundryOptions
+            {
+                Endpoint = "https://myresource.openai.azure.com/",
+                DeploymentName = "gpt-4o",
+                ProjectName = "my-project",
+                ApiKey = string.Empty
+            }
+        };
+
+        var client = ChatClientFactory.CreateChatClient(options);
+
+        Assert.NotNull(client);
+    }
+
+    [Fact]
     public void CreateChatClient_ReturnsDifferentInstances_EachCall()
     {
         var options = new AIOptions { UseFoundryLocal = true };

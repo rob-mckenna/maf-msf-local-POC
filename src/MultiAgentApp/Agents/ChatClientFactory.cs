@@ -1,3 +1,5 @@
+using Azure.AI.OpenAI;
+using Azure.Identity;
 using Microsoft.Extensions.AI;
 using MultiAgentApp.Configuration;
 using OpenAI;
@@ -52,14 +54,18 @@ public static class ChatClientFactory
     /// <summary>
     /// Creates an <see cref="IChatClient"/> backed by Microsoft Foundry.
     ///
-    /// Populate <c>AI:MicrosoftFoundry:Endpoint</c>, <c>DeploymentName</c>, <c>ProjectName</c>, and <c>ApiKey</c>
-    /// (or use Managed Identity) once a Microsoft Foundry resource is available.
+    /// Populate <c>AI:MicrosoftFoundry:Endpoint</c>, <c>DeploymentName</c>, and <c>ProjectName</c>
+    /// in configuration once a Microsoft Foundry resource is available.
     ///
     /// To switch to Microsoft Foundry:
     /// <list type="bullet">
     ///   <item>Set <c>AI:UseFoundryLocal = false</c> in configuration.</item>
     ///   <item>Populate <c>AI:MicrosoftFoundry:Endpoint</c>, <c>DeploymentName</c>, and <c>ProjectName</c>.</item>
-    ///   <item>Set the API key, or uncomment the Managed Identity / AzureCliCredential section.</item>
+    ///   <item>
+    ///     Leave <c>AI:MicrosoftFoundry:ApiKey</c> empty to authenticate via
+    ///     <see cref="DefaultAzureCredential"/> (Managed Identity / Azure CLI), or populate it
+    ///     to use API key authentication.
+    ///   </item>
     /// </list>
     /// </summary>
     private static IChatClient CreateMicrosoftFoundryClient(MicrosoftFoundryOptions opts)
@@ -68,32 +74,31 @@ public static class ChatClientFactory
         {
             throw new InvalidOperationException(
                 "Microsoft Foundry endpoint is not configured. " +
-                "Set AI:MicrosoftFoundry:Endpoint, DeploymentName, ProjectName, and ApiKey in configuration, " +
+                "Set AI:MicrosoftFoundry:Endpoint, DeploymentName, and ProjectName in configuration, " +
                 "or set AI:UseFoundryLocal=true to use Microsoft Foundry Local instead.");
         }
 
-        // ── Microsoft Foundry – API key authentication ──────────────────────────
-        var openAiClient = new OpenAIClient(
-            new ApiKeyCredential(opts.ApiKey),
-            new OpenAIClientOptions { Endpoint = new Uri(opts.Endpoint) });
+        // When no API key is configured, use DefaultAzureCredential.
+        // This is the preferred authentication method for Azure deployments and supports
+        // Managed Identity, Azure CLI, environment variables, and other credential sources.
+        if (string.IsNullOrWhiteSpace(opts.ApiKey))
+        {
+            var azureClient = new AzureOpenAIClient(
+                new Uri(opts.Endpoint),
+                new DefaultAzureCredential());
 
-        return openAiClient
+            return azureClient
+                .GetChatClient(opts.DeploymentName)
+                .AsIChatClient();
+        }
+
+        // API key authentication – for local development or environments where a key is available.
+        var keyedClient = new AzureOpenAIClient(
+            new Uri(opts.Endpoint),
+            new Azure.AzureKeyCredential(opts.ApiKey));
+
+        return keyedClient
             .GetChatClient(opts.DeploymentName)
             .AsIChatClient();
-
-        // ── Microsoft Foundry – Managed Identity / token-based auth ─────────────
-        // Uncomment the following block and remove the API key block above to use
-        // Azure Managed Identity (preferred in production) or Azure CLI credentials:
-        //
-        // using Azure.Identity;
-        // using Azure.AI.OpenAI;
-        // using System.ClientModel.Primitives;
-        //
-        // var credential = new DefaultAzureCredential();
-        // var tokenPolicy = new BearerTokenPolicy(credential, "https://cognitiveservices.azure.com/.default");
-        // var azureClient = new OpenAIClient(tokenPolicy,
-        //     new OpenAIClientOptions { Endpoint = new Uri(opts.Endpoint) });
-        // return azureClient.GetChatClient(opts.DeploymentName).AsIChatClient();
-        // ── End Microsoft Foundry ───────────────────────────────────────────────
     }
 }
