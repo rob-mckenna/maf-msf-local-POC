@@ -8,7 +8,7 @@ namespace MultiAgentApp.Agents;
 /// <summary>
 /// Creates <see cref="IChatClient"/> instances that back Microsoft Agent Framework agents.
 ///
-/// Switching between Microsoft Foundry Local (local) and Azure AI Foundry (cloud) is
+/// Switching between Microsoft Foundry Local (local) and Microsoft Foundry (cloud) is
 /// controlled solely by <see cref="AIOptions.UseFoundryLocal"/> in configuration.
 /// No code changes are needed to flip between backends.
 /// </summary>
@@ -22,7 +22,7 @@ public static class ChatClientFactory
     public static IChatClient CreateChatClient(AIOptions options) =>
         options.UseFoundryLocal
             ? CreateFoundryLocalClient(options.FoundryLocal)
-            : CreateAzureAIFoundryClient(options.AzureAIFoundry);
+            : CreateMicrosoftFoundryClient(options.MicrosoftFoundry);
 
     // ── Private helpers ──────────────────────────────────────────────────────
 
@@ -50,29 +50,29 @@ public static class ChatClientFactory
     }
 
     /// <summary>
-    /// Creates an <see cref="IChatClient"/> backed by Azure AI Foundry.
+    /// Creates an <see cref="IChatClient"/> backed by Microsoft Foundry.
     ///
-    /// Populate <c>AI:AzureAIFoundry:Endpoint</c>, <c>DeploymentName</c>, and <c>ApiKey</c>
-    /// (or use Managed Identity) once an Azure AI Foundry resource is available.
+    /// Populate <c>AI:MicrosoftFoundry:Endpoint</c>, <c>DeploymentName</c>, <c>ProjectName</c>, and <c>ApiKey</c>
+    /// (or use Managed Identity) once a Microsoft Foundry resource is available.
     ///
-    /// To switch to Azure AI Foundry:
+    /// To switch to Microsoft Foundry:
     /// <list type="bullet">
     ///   <item>Set <c>AI:UseFoundryLocal = false</c> in configuration.</item>
-    ///   <item>Populate <c>AI:AzureAIFoundry:Endpoint</c> and <c>DeploymentName</c>.</item>
+    ///   <item>Populate <c>AI:MicrosoftFoundry:Endpoint</c>, <c>DeploymentName</c>, and <c>ProjectName</c>.</item>
     ///   <item>Set the API key, or uncomment the Managed Identity / AzureCliCredential section.</item>
     /// </list>
     /// </summary>
-    private static IChatClient CreateAzureAIFoundryClient(AzureAIFoundryOptions opts)
+    private static IChatClient CreateMicrosoftFoundryClient(MicrosoftFoundryOptions opts)
     {
         if (string.IsNullOrWhiteSpace(opts.Endpoint))
         {
             throw new InvalidOperationException(
-                "Azure AI Foundry endpoint is not configured. " +
-                "Set AI:AzureAIFoundry:Endpoint, DeploymentName, and ApiKey in configuration, " +
+                "Microsoft Foundry endpoint is not configured. " +
+                "Set AI:MicrosoftFoundry:Endpoint, DeploymentName, ProjectName, and ApiKey in configuration, " +
                 "or set AI:UseFoundryLocal=true to use Microsoft Foundry Local instead.");
         }
 
-        // ── Azure AI Foundry – API key authentication ──────────────────────────
+        // ── Microsoft Foundry – API key authentication ──────────────────────────
         var openAiClient = new OpenAIClient(
             new ApiKeyCredential(opts.ApiKey),
             new OpenAIClientOptions { Endpoint = new Uri(opts.Endpoint) });
@@ -81,7 +81,7 @@ public static class ChatClientFactory
             .GetChatClient(opts.DeploymentName)
             .AsIChatClient();
 
-        // ── Azure AI Foundry – Managed Identity / token-based auth ─────────────
+        // ── Microsoft Foundry – Managed Identity / token-based auth ─────────────
         // Uncomment the following block and remove the API key block above to use
         // Azure Managed Identity (preferred in production) or Azure CLI credentials:
         //
@@ -94,6 +94,6 @@ public static class ChatClientFactory
         // var azureClient = new OpenAIClient(tokenPolicy,
         //     new OpenAIClientOptions { Endpoint = new Uri(opts.Endpoint) });
         // return azureClient.GetChatClient(opts.DeploymentName).AsIChatClient();
-        // ── End Azure AI Foundry ───────────────────────────────────────────────
+        // ── End Microsoft Foundry ───────────────────────────────────────────────
     }
 }

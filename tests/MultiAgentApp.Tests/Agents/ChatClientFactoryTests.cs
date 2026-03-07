@@ -6,7 +6,7 @@ namespace MultiAgentApp.Tests.Agents;
 
 /// <summary>
 /// Tests for <see cref="ChatClientFactory"/> – the factory that creates
-/// <see cref="IChatClient"/> instances backed by Foundry Local or Azure AI Foundry.
+/// <see cref="IChatClient"/> instances backed by Foundry Local or Microsoft Foundry.
 /// </summary>
 public class ChatClientFactoryTests
 {
@@ -31,15 +31,16 @@ public class ChatClientFactoryTests
     }
 
     [Fact]
-    public void CreateChatClient_WithAzureAIFoundry_EmptyEndpoint_Throws()
+    public void CreateChatClient_WithMicrosoftFoundry_EmptyEndpoint_Throws()
     {
         var options = new AIOptions
         {
             UseFoundryLocal = false,
-            AzureAIFoundry = new AzureAIFoundryOptions
+            MicrosoftFoundry = new MicrosoftFoundryOptions
             {
                 Endpoint = string.Empty,
                 DeploymentName = "gpt-4o",
+                ProjectName = "my-project",
                 ApiKey = "test-key"
             }
         };
@@ -49,15 +50,16 @@ public class ChatClientFactoryTests
     }
 
     [Fact]
-    public void CreateChatClient_WithAzureAIFoundry_ValidConfig_ReturnsIChatClient()
+    public void CreateChatClient_WithMicrosoftFoundry_ValidConfig_ReturnsIChatClient()
     {
         var options = new AIOptions
         {
             UseFoundryLocal = false,
-            AzureAIFoundry = new AzureAIFoundryOptions
+            MicrosoftFoundry = new MicrosoftFoundryOptions
             {
                 Endpoint = "https://myresource.openai.azure.com/",
                 DeploymentName = "gpt-4o",
+                ProjectName = "my-project",
                 ApiKey = "test-key"
             }
         };

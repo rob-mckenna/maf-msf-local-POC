@@ -35,7 +35,7 @@ public sealed class WeatherAgent
     private readonly IList<AITool> _tools;
     private readonly ILoggerFactory? _loggerFactory;
 
-    /// <param name="chatClient">The underlying chat completion client (Foundry Local or Azure AI Foundry).</param>
+    /// <param name="chatClient">The underlying chat completion client (Foundry Local or Microsoft Foundry).</param>
     /// <param name="tools">MCP tool functions from the Weather MCP server.</param>
     /// <param name="loggerFactory">Optional logger factory for agent middleware.</param>
     public WeatherAgent(IChatClient chatClient, IList<AITool> tools, ILoggerFactory? loggerFactory = null)
