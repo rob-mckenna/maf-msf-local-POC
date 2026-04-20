@@ -8,8 +8,8 @@ namespace MultiAgentApp.Agents;
 /// </summary>
 public sealed class ProductsAgent
 {
-    public const string AgentName = "ProductsAgent";
-    public const string AgentDescription = "Specialist node for product catalog searches, details, and inventory queries.";
+    public const string NodeName = "ProductsAgent";
+    public const string NodeDescription = "Specialist node for product catalog searches, details, and inventory queries.";
 
     private const string Instructions = """
         You are a product catalog specialist agent. Your job is to search for products,
@@ -38,8 +38,8 @@ public sealed class ProductsAgent
         _logger = loggerFactory?.CreateLogger<ProductsAgent>();
     }
 
-    public string Name => AgentName;
-    public string Description => AgentDescription;
+    public string Name => NodeName;
+    public string Description => NodeDescription;
 
     public async Task<string> RunAsync(string userMessage, CancellationToken ct = default)
     {

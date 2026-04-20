@@ -93,7 +93,6 @@ var orchestrator = new OrchestratorAgent(
     chatClient,
     weatherAgent,
     productsAgent,
-    loggerFactory,
     loggerFactory.CreateLogger<OrchestratorAgent>());
 
 // ── Demo Queries ─────────────────────────────────────────────────────────────

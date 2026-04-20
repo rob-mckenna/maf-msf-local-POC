@@ -8,8 +8,8 @@ namespace MultiAgentApp.Agents;
 /// </summary>
 public sealed class WeatherAgent
 {
-    public const string AgentName = "WeatherAgent";
-    public const string AgentDescription = "Specialist node for weather conditions, forecasts, and climate queries.";
+    public const string NodeName = "WeatherAgent";
+    public const string NodeDescription = "Specialist node for weather conditions, forecasts, and climate queries.";
 
     private const string Instructions = """
         You are a weather specialist agent. Your job is to retrieve current weather conditions
@@ -37,8 +37,8 @@ public sealed class WeatherAgent
         _logger = loggerFactory?.CreateLogger<WeatherAgent>();
     }
 
-    public string Name => AgentName;
-    public string Description => AgentDescription;
+    public string Name => NodeName;
+    public string Description => NodeDescription;
 
     public async Task<string> RunAsync(string userMessage, CancellationToken ct = default)
     {

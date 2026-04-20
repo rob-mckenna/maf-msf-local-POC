@@ -26,7 +26,6 @@ public sealed class OrchestratorAgent
         IChatClient chatClient,
         WeatherAgent weatherAgent,
         ProductsAgent productsAgent,
-        ILoggerFactory? _,
         ILogger<OrchestratorAgent> logger)
     {
         _chatClient = chatClient;
@@ -62,7 +61,7 @@ public sealed class OrchestratorAgent
         return finalResponse;
     }
 
-    private static void Route(GraphState state)
+    private void Route(GraphState state)
     {
         var text = state.UserMessage.ToLowerInvariant();
         var weatherTerms = new[] { "weather", "forecast", "temperature", "rain", "snow", "climate" };
@@ -74,6 +73,8 @@ public sealed class OrchestratorAgent
         // Default to both for broad/ambiguous requests.
         if (!state.NeedsWeather && !state.NeedsProducts)
         {
+            _logger.LogInformation(
+                "Router found no explicit specialist terms for input; routing to both specialists by default.");
             state.NeedsWeather = true;
             state.NeedsProducts = true;
         }
