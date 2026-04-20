@@ -1,0 +1,33 @@
+{
+  "AI": {
+    "UseFoundryLocal": true,
+    "FoundryLocal": {
+      "Endpoint": "http://localhost:5272/v1",
+      "ModelId": "phi-4-mini-reasoning",
+      "ApiKey": "foundry-local"
+    },
+    "MicrosoftFoundry": {
+      "Endpoint": "",
+      "DeploymentName": "",
+      "ProjectName": "",
+      "ApiKey": ""
+    }
+  },
+  "MCP": {
+    "UseAzureApim": false,
+    "WeatherServer": {
+      "Name": "WeatherMcpServer",
+      "StdioCommand": "python",
+      "StdioArguments": ["-m", "weather_mcp_server.server"]
+    },
+    "ProductsServer": {
+      "Name": "ProductsMcpServer",
+      "StdioCommand": "python",
+      "StdioArguments": ["-m", "products_mcp_server.server"]
+    }
+  },
+  "Telemetry": {
+    "ApplicationInsightsConnectionString": "",
+    "EnableDetailedTracing": false
+  }
+}

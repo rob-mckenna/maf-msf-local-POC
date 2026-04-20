@@ -1,9 +1,10 @@
 # Multi-Agent App – LangGraph-Style Orchestration + Foundry Local POC
 
-A **C# .NET 8** proof-of-concept demonstrating a **multi-agent workflow** built with a
-**state-graph (LangGraph-style) orchestration pattern**, plus **Microsoft Foundry Local**,
-with a clear upgrade path to **Microsoft Foundry** and
-**Azure API Management MCP** once those cloud resources are available.
+A **Python 3.12** proof-of-concept demonstrating a **multi-agent workflow**
+built with a **state-graph (LangGraph-style) orchestration pattern**, the
+**Python MCP SDK**, and **Microsoft Foundry Local**, with a clear upgrade path
+to **Microsoft Foundry** and **Azure API Management MCP** once those cloud
+resources are available.
 
 ---
 
@@ -11,33 +12,35 @@ with a clear upgrade path to **Microsoft Foundry** and
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
-│                        MultiAgentApp                           │
+│                        multi_agent_app                         │
 │                                                                │
-│  Program.cs                                                    │
-│    └─ OrchestratorAgent  (state-graph routing + synthesis)    │
-│         ├─ WeatherAgent  ──► WeatherMcpServer (stdio / APIM)  │
-│         └─ ProductsAgent ──► ProductsMcpServer (stdio / APIM) │
+│  main.py                                                       │
+│    └─ OrchestratorAgent  (router → specialists → synthesizer)  │
+│         ├─ WeatherAgent  ──► weather_mcp_server  (stdio/APIM)  │
+│         └─ ProductsAgent ──► products_mcp_server (stdio/APIM)  │
 │                                                                │
 │  Telemetry: OpenTelemetry → console + optional AppInsights     │
 └────────────────────────────────────────────────────────────────┘
 ```
 
-### Projects
+### Packages
 
-| Project | Description |
+| Package | Description |
 |---|---|
-| `src/MultiAgentApp` | Main orchestration app using state-graph orchestration |
-| `src/WeatherMcpServer` | MCP server exposing mocked Weather API tools via stdio |
-| `src/ProductsMcpServer` | MCP server exposing mocked Products API tools via stdio |
-| `tests/MultiAgentApp.Tests` | xUnit unit tests |
+| `src/multi_agent_app` | Main orchestration app |
+| `src/weather_mcp_server` | MCP server exposing mocked Weather API tools via stdio |
+| `src/products_mcp_server` | MCP server exposing mocked Products API tools via stdio |
+| `tests/` | pytest unit tests |
 
-### Key Packages
+### Key dependencies
 
 | Package | Purpose |
 |---|---|
-| `Microsoft.Extensions.AI.OpenAI` | `AsIChatClient()` for OpenAI-compatible endpoints |
-| `ModelContextProtocol` (1.1.0) | MCP client (stdio now; APIM-ready) |
-| `OpenTelemetry` + `Azure.Monitor.OpenTelemetry.Exporter` | Tracing (AppInsights-ready) |
+| `openai>=1.54` | Async OpenAI-compatible client (`AsyncOpenAI`, `AsyncAzureOpenAI`) |
+| `azure-identity>=1.19` | `DefaultAzureCredential` for passwordless Azure auth |
+| `mcp[cli]>=1.6` | MCP client + server SDK (`FastMCP`, `ClientSession`, `stdio_client`) |
+| `opentelemetry-sdk>=1.29` | Tracing to console (always enabled) |
+| `azure-monitor-opentelemetry-exporter` | Sends traces to Application Insights when configured |
 
 ---
 
@@ -45,89 +48,83 @@ with a clear upgrade path to **Microsoft Foundry** and
 
 ### Prerequisites
 
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8)
-- [Microsoft Foundry Local](https://learn.microsoft.com/azure/ai-foundry/foundry-local) (for local mode)
+- Python 3.12+
+- [Microsoft Foundry Local](https://learn.microsoft.com/azure/ai-foundry/foundry-local)
+
+### Install
+
+```bash
+pip install -e ".[dev]"
+```
 
 ### Running with Foundry Local
 
 1. **Install and start Foundry Local**:
    ```bash
-   # Install (one-time)
    winget install Microsoft.FoundryLocal
-
-   # Pull and start a model
    foundry model run phi-4-mini-reasoning
    ```
 
-2. **Build and run**:
+2. **Run the app** from the repo root:
    ```bash
-   dotnet run --project src/MultiAgentApp
+   python -m multi_agent_app.main
    ```
-   The app auto-launches the Weather and Products MCP servers as child processes.
+   The MCP servers are launched automatically as child processes.
 
 ---
 
 ## Switching to Microsoft Foundry
 
-When a Microsoft Foundry resource is available, flip a single config flag:
+Edit `src/multi_agent_app/settings.json`:
 
-1. Edit `src/MultiAgentApp/appsettings.json`:
-   ```json
-   "AI": {
-     "UseFoundryLocal": false,
-     "MicrosoftFoundry": {
-       "Endpoint":        "https://YOUR-RESOURCE.openai.azure.com/",
-       "DeploymentName":  "gpt-4o",
-       "ProjectName":     "YOUR-PROJECT-NAME",
-       "ApiKey":          "YOUR-API-KEY"
-     }
-   }
-   ```
-   > For Managed Identity / passwordless auth, see the comment block in
-   > `src/MultiAgentApp/Agents/ChatClientFactory.cs`.
+```json
+"AI": {
+  "UseFoundryLocal": false,
+  "MicrosoftFoundry": {
+    "Endpoint":       "https://YOUR-RESOURCE.openai.azure.com/",
+    "DeploymentName": "gpt-4o",
+    "ProjectName":    "YOUR-PROJECT",
+    "ApiKey":         "YOUR-API-KEY"
+  }
+}
+```
 
-2. No code changes required.
+Leave `ApiKey` empty to use `DefaultAzureCredential` (Managed Identity / Azure CLI).
 
 ---
 
 ## Switching MCP Servers to Azure API Management
 
-When Azure API Management MCP support is available:
-
-1. Set `MCP:UseAzureApim = true` in configuration.
-2. Populate `MCP:WeatherServer:ApimEndpoint` and `MCP:ProductsServer:ApimEndpoint`.
-3. Uncomment the `BuildApimTransport` implementation in `McpClientFactory.cs`.
+1. Set `MCP.UseAzureApim = true` in settings.
+2. Populate `MCP.WeatherServer.ApimEndpoint` / `MCP.ProductsServer.ApimEndpoint`.
+3. Implement `_build_apim_transport` in `mcp_client_factory.py`.
 
 ---
 
 ## Enabling Application Insights
 
-Telemetry is already wired up via OpenTelemetry. To activate Application Insights:
+```json
+"Telemetry": {
+  "ApplicationInsightsConnectionString": "InstrumentationKey=..."
+}
+```
 
-1. Set the connection string in configuration (environment variable preferred in production):
-   ```json
-   "Telemetry": {
-     "ApplicationInsightsConnectionString": "InstrumentationKey=..."
-   }
-   ```
-2. Restart the app — no code changes needed.
-
-The `Azure.Monitor.OpenTelemetry.Exporter` package is already referenced and the exporter
-is registered in `TelemetryConfiguration.cs`.
+Restart the app — no code changes needed.
 
 ---
 
 ## Running Tests
 
 ```bash
-dotnet test MultiAgentApp.slnx
+pytest
 ```
 
 Tests cover:
-- `ChatClientFactory` – client creation for both backends
-- `WeatherAgent` / `ProductsAgent` – specialist graph nodes with MCP tool bindings
-- `WeatherTools` / `ProductsTools` – MCP server tool logic (no network required)
-- Configuration options classes
+
+- `create_chat_client` – client creation for both AI backends
+- `WeatherAgent` / `ProductsAgent` – graph node metadata and construction
+- `WeatherTools` / `ProductsTools` – MCP server tool logic (no network)
+- Configuration dataclasses – defaults and `from_dict` parsing
 
 ---
 
@@ -135,28 +132,33 @@ Tests cover:
 
 ```
 maf-msf-local-POC/
-├── MultiAgentApp.slnx
+├── pyproject.toml
 ├── src/
-│   ├── MultiAgentApp/
-│   │   ├── Agents/
-│   │   │   ├── ChatClientFactory.cs   ← IChatClient factory (Foundry Local ↔ Microsoft Foundry)
-│   │   │   ├── WeatherAgent.cs        ← Weather specialist graph node + MCP tools
-│   │   │   ├── ProductsAgent.cs       ← Products specialist graph node + MCP tools
-│   │   │   └── OrchestratorAgent.cs   ← Router/specialist/synthesizer graph flow
-│   │   ├── Configuration/
-│   │   │   ├── AIOptions.cs
-│   │   │   ├── McpOptions.cs
-│   │   │   └── TelemetryOptions.cs
-│   │   ├── MCP/
-│   │   │   └── McpClientFactory.cs    ← Connects to MCP servers, returns AITool[]
-│   │   ├── Telemetry/
-│   │   │   └── TelemetryConfiguration.cs ← OpenTelemetry + AppInsights-ready
-│   │   ├── appsettings.json
-│   │   └── Program.cs
-│   ├── WeatherMcpServer/
-│   │   └── Tools/WeatherTools.cs      ← Mocked weather tool implementations
-│   └── ProductsMcpServer/
-│       └── Tools/ProductsTools.cs     ← Mocked products tool implementations
+│   ├── multi_agent_app/
+│   │   ├── agents/
+│   │   │   ├── chat_client_factory.py   ← AsyncOpenAI / AsyncAzureOpenAI factory
+│   │   │   ├── weather_agent.py         ← Weather specialist graph node
+│   │   │   ├── products_agent.py        ← Products specialist graph node
+│   │   │   └── orchestrator_agent.py    ← Router / specialist / synthesizer graph
+│   │   ├── config/
+│   │   │   ├── ai_options.py
+│   │   │   ├── mcp_options.py
+│   │   │   └── telemetry_options.py
+│   │   ├── mcp/
+│   │   │   └── mcp_client_factory.py    ← Connects to MCP servers, returns McpToolSet
+│   │   ├── telemetry/
+│   │   │   └── telemetry_configuration.py ← OpenTelemetry + AppInsights-ready
+│   │   ├── main.py
+│   │   ├── settings.json
+│   │   └── settings.development.json
+│   ├── weather_mcp_server/
+│   │   ├── server.py                    ← FastMCP server entry point
+│   │   └── tools/weather_tools.py       ← Mocked weather tool implementations
+│   └── products_mcp_server/
+│       ├── server.py                    ← FastMCP server entry point
+│       └── tools/products_tools.py      ← Mocked products tool implementations
 └── tests/
-    └── MultiAgentApp.Tests/
+    ├── agents/
+    ├── config/
+    └── mcp/
 ```

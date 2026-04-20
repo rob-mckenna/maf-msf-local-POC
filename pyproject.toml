@@ -1,0 +1,40 @@
+[project]
+name = "multi-agent-app"
+version = "0.1.0"
+description = "Multi-agent orchestration POC using LangGraph-style graph, Python MCP SDK, and OpenAI-compatible backends"
+requires-python = ">=3.12"
+dependencies = [
+    # OpenAI-compatible client (Foundry Local and Azure OpenAI / Microsoft Foundry)
+    "openai>=1.54",
+    # Azure identity for DefaultAzureCredential / Managed Identity auth
+    "azure-identity>=1.19",
+    # MCP (Model Context Protocol) client + server SDK
+    "mcp[cli]>=1.6",
+    # OpenTelemetry tracing (console exporter ships with the SDK)
+    "opentelemetry-sdk>=1.29",
+    # Azure Monitor / Application Insights exporter (opt-in via config)
+    "azure-monitor-opentelemetry-exporter>=1.0.0b30",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+]
+
+[project.scripts]
+multi-agent-app        = "multi_agent_app.main:run"
+weather-mcp-server     = "weather_mcp_server.server:run"
+products-mcp-server    = "products_mcp_server.server:run"
+
+[tool.pytest.ini_options]
+testpaths      = ["tests"]
+pythonpath     = ["src"]
+asyncio_mode   = "auto"
+
+[build-system]
+requires      = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
