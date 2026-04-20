@@ -1,8 +1,8 @@
-# Multi-Agent App – Microsoft Agent Framework + Foundry Local POC
+# Multi-Agent App – LangGraph-Style Orchestration + Foundry Local POC
 
-A **C# .NET 8** proof-of-concept demonstrating a **multi-agent workflow** built with the
-[Microsoft Agent Framework](https://github.com/microsoft/agent-framework) (`Microsoft.Agents.AI.*`)
-and **Microsoft Foundry Local**, with a clear upgrade path to **Microsoft Foundry** and
+A **C# .NET 8** proof-of-concept demonstrating a **multi-agent workflow** built with a
+**state-graph (LangGraph-style) orchestration pattern**, plus **Microsoft Foundry Local**,
+with a clear upgrade path to **Microsoft Foundry** and
 **Azure API Management MCP** once those cloud resources are available.
 
 ---
@@ -14,7 +14,7 @@ and **Microsoft Foundry Local**, with a clear upgrade path to **Microsoft Foundr
 │                        MultiAgentApp                           │
 │                                                                │
 │  Program.cs                                                    │
-│    └─ OrchestratorAgent  (MAF handoff workflow)               │
+│    └─ OrchestratorAgent  (state-graph routing + synthesis)    │
 │         ├─ WeatherAgent  ──► WeatherMcpServer (stdio / APIM)  │
 │         └─ ProductsAgent ──► ProductsMcpServer (stdio / APIM) │
 │                                                                │
@@ -26,7 +26,7 @@ and **Microsoft Foundry Local**, with a clear upgrade path to **Microsoft Foundr
 
 | Project | Description |
 |---|---|
-| `src/MultiAgentApp` | Main orchestration app using Microsoft Agent Framework |
+| `src/MultiAgentApp` | Main orchestration app using state-graph orchestration |
 | `src/WeatherMcpServer` | MCP server exposing mocked Weather API tools via stdio |
 | `src/ProductsMcpServer` | MCP server exposing mocked Products API tools via stdio |
 | `tests/MultiAgentApp.Tests` | xUnit unit tests |
@@ -35,9 +35,6 @@ and **Microsoft Foundry Local**, with a clear upgrade path to **Microsoft Foundr
 
 | Package | Purpose |
 |---|---|
-| `Microsoft.Agents.AI` (1.0.0-rc3) | Core agent abstractions (`AIAgent`, `ChatClientAgent`) |
-| `Microsoft.Agents.AI.OpenAI` (1.0.0-rc3) | `AsAIAgent()` extension on `IChatClient` |
-| `Microsoft.Agents.AI.Workflows` (1.0.0-rc3) | `WorkflowBuilder`, `AgentWorkflowBuilder` |
 | `Microsoft.Extensions.AI.OpenAI` | `AsIChatClient()` for OpenAI-compatible endpoints |
 | `ModelContextProtocol` (1.1.0) | MCP client (stdio now; APIM-ready) |
 | `OpenTelemetry` + `Azure.Monitor.OpenTelemetry.Exporter` | Tracing (AppInsights-ready) |
@@ -128,7 +125,7 @@ dotnet test MultiAgentApp.slnx
 
 Tests cover:
 - `ChatClientFactory` – client creation for both backends
-- `WeatherAgent` / `ProductsAgent` – MAF agent construction
+- `WeatherAgent` / `ProductsAgent` – specialist graph nodes with MCP tool bindings
 - `WeatherTools` / `ProductsTools` – MCP server tool logic (no network required)
 - Configuration options classes
 
@@ -143,9 +140,9 @@ maf-msf-local-POC/
 │   ├── MultiAgentApp/
 │   │   ├── Agents/
 │   │   │   ├── ChatClientFactory.cs   ← IChatClient factory (Foundry Local ↔ Microsoft Foundry)
-│   │   │   ├── WeatherAgent.cs        ← MAF ChatClientAgent + Weather MCP tools
-│   │   │   ├── ProductsAgent.cs       ← MAF ChatClientAgent + Products MCP tools
-│   │   │   └── OrchestratorAgent.cs   ← AgentWorkflowBuilder handoff workflow
+│   │   │   ├── WeatherAgent.cs        ← Weather specialist graph node + MCP tools
+│   │   │   ├── ProductsAgent.cs       ← Products specialist graph node + MCP tools
+│   │   │   └── OrchestratorAgent.cs   ← Router/specialist/synthesizer graph flow
 │   │   ├── Configuration/
 │   │   │   ├── AIOptions.cs
 │   │   │   ├── McpOptions.cs

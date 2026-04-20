@@ -1,20 +1,15 @@
-using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 
 namespace MultiAgentApp.Agents;
 
 /// <summary>
-/// Specialist agent that searches for and reasons about product catalog data.
-///
-/// The agent receives its tools from the Products MCP server (via <see cref="McpClientFactory"/>),
-/// so it can call <c>search_products</c>, <c>get_product_details</c>, and <c>check_inventory</c>
-/// without any hard-coded catalog logic.
+/// Products specialist node used by the orchestrator graph.
 /// </summary>
 public sealed class ProductsAgent
 {
-    private const string Name = "ProductsAgent";
-    private const string Description = "Specialist agent for product catalog searches, details, and inventory queries.";
+    public const string AgentName = "ProductsAgent";
+    public const string AgentDescription = "Specialist node for product catalog searches, details, and inventory queries.";
 
     private const string Instructions = """
         You are a product catalog specialist agent. Your job is to search for products,
@@ -34,27 +29,35 @@ public sealed class ProductsAgent
 
     private readonly IChatClient _chatClient;
     private readonly IList<AITool> _tools;
-    private readonly ILoggerFactory? _loggerFactory;
+    private readonly ILogger<ProductsAgent>? _logger;
 
-    /// <param name="chatClient">The underlying chat completion client (Foundry Local or Microsoft Foundry).</param>
-    /// <param name="tools">MCP tool functions from the Products MCP server.</param>
-    /// <param name="loggerFactory">Optional logger factory for agent middleware.</param>
     public ProductsAgent(IChatClient chatClient, IList<AITool> tools, ILoggerFactory? loggerFactory = null)
     {
         _chatClient = chatClient;
         _tools = tools;
-        _loggerFactory = loggerFactory;
+        _logger = loggerFactory?.CreateLogger<ProductsAgent>();
     }
 
-    /// <summary>
-    /// Builds and returns the underlying <see cref="AIAgent"/> ready for use in a workflow.
-    /// </summary>
-    public AIAgent Build() =>
-        _chatClient.AsAIAgent(
-            instructions: Instructions,
-            name: Name,
-            description: Description,
-            tools: _tools,
-            loggerFactory: _loggerFactory);
-}
+    public string Name => AgentName;
+    public string Description => AgentDescription;
 
+    public async Task<string> RunAsync(string userMessage, CancellationToken ct = default)
+    {
+        var response = await _chatClient.GetResponseAsync(
+            [
+                new ChatMessage(ChatRole.System, Instructions),
+                new ChatMessage(ChatRole.User, userMessage)
+            ],
+            new ChatOptions { Tools = _tools },
+            ct);
+
+        var text = response.Text?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            _logger?.LogWarning("{Agent} returned an empty response.", Name);
+            return "I couldn't retrieve product details from the available tools.";
+        }
+
+        return text;
+    }
+}

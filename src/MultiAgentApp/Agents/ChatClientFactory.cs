@@ -8,7 +8,7 @@ using System.ClientModel;
 namespace MultiAgentApp.Agents;
 
 /// <summary>
-/// Creates <see cref="IChatClient"/> instances that back Microsoft Agent Framework agents.
+/// Creates <see cref="IChatClient"/> instances that back orchestration graph nodes.
 ///
 /// Switching between Microsoft Foundry Local (local) and Microsoft Foundry (cloud) is
 /// controlled solely by <see cref="AIOptions.UseFoundryLocal"/> in configuration.

@@ -1,5 +1,4 @@
 using Azure.Monitor.OpenTelemetry.Exporter;
-using Microsoft.Agents.AI;
 using Microsoft.Extensions.Logging;
 using MultiAgentApp.Configuration;
 using OpenTelemetry;
@@ -26,10 +25,7 @@ public static class TelemetryConfiguration
     /// configured, also to Azure Monitor Application Insights.
     /// </summary>
     /// <param name="options">Telemetry options from configuration.</param>
-    /// <param name="sourceName">
-    /// Activity source name used to correlate traces across agents.
-    /// Pass the same value to <see cref="AddOpenTelemetryToAgent"/>.
-    /// </param>
+    /// <param name="sourceName">Activity source name used to correlate traces across graph nodes.</param>
     public static TracerProvider BuildTracerProvider(TelemetryOptions options, string sourceName)
     {
         var builder = Sdk.CreateTracerProviderBuilder()
@@ -50,15 +46,6 @@ public static class TelemetryConfiguration
     }
 
     /// <summary>
-    /// Wraps the given <paramref name="agent"/> with OpenTelemetry middleware so that
-    /// all agent invocations are traced under <paramref name="sourceName"/>.
-    /// </summary>
-    public static AIAgent AddOpenTelemetryToAgent(AIAgent agent, string sourceName) =>
-        agent.AsBuilder()
-             .UseOpenTelemetry(sourceName: sourceName)
-             .Build();
-
-    /// <summary>
     /// Configures the <see cref="ILoggingBuilder"/> log level based on
     /// <paramref name="options"/>.
     /// </summary>
@@ -72,4 +59,3 @@ public static class TelemetryConfiguration
         return builder;
     }
 }
-

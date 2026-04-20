@@ -41,7 +41,7 @@ var logger = loggerFactory.CreateLogger("MultiAgentApp");
 
 Console.ForegroundColor = ConsoleColor.Cyan;
 Console.WriteLine("╔══════════════════════════════════════════════════════════╗");
-Console.WriteLine("║      Multi-Agent App  –  Microsoft Agent Framework       ║");
+Console.WriteLine("║      Multi-Agent App  –  LangGraph-style Workflow        ║");
 Console.WriteLine("╚══════════════════════════════════════════════════════════╝");
 Console.ResetColor();
 

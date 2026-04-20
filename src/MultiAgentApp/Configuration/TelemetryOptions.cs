@@ -17,8 +17,8 @@ public sealed class TelemetryOptions
     public string ApplicationInsightsConnectionString { get; set; } = string.Empty;
 
     /// <summary>
-    /// When <c>true</c>, detailed Microsoft Agent Framework activity traces are emitted
-    /// (tool calls, token counts, latencies). Disable in production to reduce costs.
+    /// When <c>true</c>, detailed orchestration and tool-call traces are emitted.
+    /// Disable in production to reduce costs.
     /// </summary>
     public bool EnableDetailedTracing { get; set; } = true;
 }

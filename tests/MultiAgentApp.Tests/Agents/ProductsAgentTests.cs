@@ -1,4 +1,3 @@
-using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using MultiAgentApp.Agents;
 using MultiAgentApp.Configuration;
@@ -11,43 +10,34 @@ public class ProductsAgentTests
         ChatClientFactory.CreateChatClient(new AIOptions { UseFoundryLocal = true });
 
     [Fact]
-    public void Build_ReturnsAIAgentWithCorrectName()
+    public void Metadata_HasExpectedName()
     {
         var client = CreateTestChatClient();
         var agent = new ProductsAgent(client, tools: []);
 
-        var builtAgent = agent.Build();
-
-        Assert.Equal("ProductsAgent", builtAgent.Name);
+        Assert.Equal("ProductsAgent", agent.Name);
     }
 
     [Fact]
-    public void Build_AgentHasDescription()
+    public void Metadata_HasDescription()
     {
         var client = CreateTestChatClient();
         var agent = new ProductsAgent(client, tools: []);
 
-        var builtAgent = agent.Build();
-
-        Assert.NotNull(builtAgent.Description);
-        Assert.Contains("product", builtAgent.Description, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("product", agent.Description, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public void Build_CalledMultipleTimes_ReturnsDistinctAgents()
+    public void Constructor_WithNoTools_DoesNotThrow()
     {
         var client = CreateTestChatClient();
-        var agent = new ProductsAgent(client, tools: []);
+        var ex = Record.Exception(() => new ProductsAgent(client, tools: []));
 
-        var agent1 = agent.Build();
-        var agent2 = agent.Build();
-
-        Assert.NotSame(agent1, agent2);
-        Assert.Equal(agent1.Name, agent2.Name);
+        Assert.Null(ex);
     }
 
     [Fact]
-    public void Build_WithTools_AgentHasTools()
+    public void Constructor_WithTools_DoesNotThrow()
     {
         var client = CreateTestChatClient();
         AITool mockTool = AIFunctionFactory.Create(
@@ -55,10 +45,7 @@ public class ProductsAgentTests
             "get_product",
             "Gets a product");
 
-        var agent = new ProductsAgent(client, tools: [mockTool]);
-
-        var builtAgent = agent.Build();
-        Assert.NotNull(builtAgent);
+        var ex = Record.Exception(() => new ProductsAgent(client, tools: [mockTool]));
+        Assert.Null(ex);
     }
 }
-

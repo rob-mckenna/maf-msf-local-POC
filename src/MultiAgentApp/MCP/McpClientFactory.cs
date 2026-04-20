@@ -7,7 +7,7 @@ namespace MultiAgentApp.MCP;
 
 /// <summary>
 /// Creates MCP (Model Context Protocol) clients and converts their tools to
-/// <see cref="AITool"/> instances that Microsoft Agent Framework agents can call.
+/// <see cref="AITool"/> instances that orchestration graph nodes can call.
 ///
 /// Transport strategy:
 /// • Local (default): launches server executables as child processes via stdio transport.
@@ -57,7 +57,7 @@ public sealed class McpClientFactory : IAsyncDisposable
         var tools = await client.ListToolsAsync(cancellationToken: ct);
 
         // McpClientTool inherits from AIFunction which inherits from AITool,
-        // so it can be used directly as AITool by MAF agents.
+        // so it can be used directly by graph specialist nodes.
         return [.. tools];
     }
 
@@ -106,5 +106,4 @@ public sealed class McpClientFactory : IAsyncDisposable
         _clients.Clear();
     }
 }
-
 

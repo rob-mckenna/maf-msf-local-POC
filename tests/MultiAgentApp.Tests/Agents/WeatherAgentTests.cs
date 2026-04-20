@@ -1,4 +1,3 @@
-using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using MultiAgentApp.Agents;
 using MultiAgentApp.Configuration;
@@ -11,56 +10,43 @@ public class WeatherAgentTests
         ChatClientFactory.CreateChatClient(new AIOptions { UseFoundryLocal = true });
 
     [Fact]
-    public void Build_ReturnsAIAgentWithCorrectName()
+    public void Metadata_HasExpectedName()
     {
         var client = CreateTestChatClient();
         var agent = new WeatherAgent(client, tools: []);
 
-        var builtAgent = agent.Build();
-
-        Assert.Equal("WeatherAgent", builtAgent.Name);
+        Assert.Equal("WeatherAgent", agent.Name);
     }
 
     [Fact]
-    public void Build_AgentHasDescription()
+    public void Metadata_HasDescription()
     {
         var client = CreateTestChatClient();
         var agent = new WeatherAgent(client, tools: []);
 
-        var builtAgent = agent.Build();
-
-        Assert.NotNull(builtAgent.Description);
-        Assert.Contains("weather", builtAgent.Description, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("weather", agent.Description, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public void Build_CalledMultipleTimes_ReturnsDistinctAgents()
+    public void Constructor_WithNoTools_DoesNotThrow()
     {
         var client = CreateTestChatClient();
-        var agent = new WeatherAgent(client, tools: []);
+        var ex = Record.Exception(() => new WeatherAgent(client, tools: []));
 
-        var agent1 = agent.Build();
-        var agent2 = agent.Build();
-
-        Assert.NotSame(agent1, agent2);
-        Assert.Equal(agent1.Name, agent2.Name);
+        Assert.Null(ex);
     }
 
     [Fact]
-    public void Build_WithTools_AgentHasTools()
+    public void Constructor_WithTools_DoesNotThrow()
     {
         var client = CreateTestChatClient();
-        // Create a mock AITool (AIFunction is a subtype of AITool)
         AITool mockTool = AIFunctionFactory.Create(
             ([System.ComponentModel.Description("Test param")] string input) => $"Echo: {input}",
             "test_tool",
             "A test tool");
 
-        var agent = new WeatherAgent(client, tools: [mockTool]);
+        var ex = Record.Exception(() => new WeatherAgent(client, tools: [mockTool]));
 
-        // Should not throw - tools are accepted
-        var builtAgent = agent.Build();
-        Assert.NotNull(builtAgent);
+        Assert.Null(ex);
     }
 }
-
